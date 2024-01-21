@@ -2,9 +2,9 @@ build:
 	wasm-pack build --target web
 
 deploy:
+	git checkout gh-pages
 	wasm-pack build --target web
 	rm pkg/.gitignore
-	git checkout gh-pages
 	git add .
 	git commit -m "deploy"
 	git push
