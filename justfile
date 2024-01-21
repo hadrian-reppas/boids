@@ -6,7 +6,7 @@ deploy:
 	wasm-pack build --target web
 	rm pkg/.gitignore
 	git add .
-	git commit -m "deploy"
+	git commit -m "deploy" || true
 	git push
 	echo "*" >> pkg/.gitignore
 	git checkout main
