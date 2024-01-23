@@ -12,8 +12,6 @@ mod state;
 mod vector;
 mod vertex;
 
-const NUM_BOIDS: u32 = 100;
-
 #[wasm_bindgen(start)]
 pub async fn start() {
     std::panic::set_hook(Box::new(console_error_panic_hook::hook));
@@ -35,8 +33,8 @@ pub async fn start() {
     let (width, height) = (canvas.client_width() as u64, canvas.client_height() as u64);
     let screen_state = screen_state::ScreenState::new(window.scale_factor(), width, height);
 
-    let mut state = state::State::new(window, 3 * NUM_BOIDS).await;
-    let mut flock = boid::Flock::new(NUM_BOIDS as usize, width, height);
+    let mut flock = boid::Flock::new(width, height);
+    let mut state = state::State::new(window).await;
 
     event_loop.run(move |event, _, control_flow| {
         let canvas = state.window().canvas();
@@ -62,9 +60,9 @@ pub async fn start() {
             }
             Event::RedrawRequested(window_id) if window_id == state.window().id() => {
                 let (width, height) = screen_state.size();
-                flock.step(width, height);
-                state.update_vertices(flock.vertices());
-                match state.render() {
+                let num_boids = flock.step(width, height);
+                state.update_vertices(flock.vertices(num_boids));
+                match state.render(num_boids) {
                     Ok(_) => {}
                     Err(wgpu::SurfaceError::Lost) => state.reconfigure_surface(),
                     Err(wgpu::SurfaceError::OutOfMemory) => *control_flow = ControlFlow::Exit,

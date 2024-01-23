@@ -9,12 +9,11 @@ pub struct State {
     surface_config: wgpu::SurfaceConfiguration,
     render_pipeline: wgpu::RenderPipeline,
     vertex_buffer: wgpu::Buffer,
-    num_vertices: u32,
     window: Window,
 }
 
 impl State {
-    pub async fn new(window: Window, num_vertices: u32) -> Self {
+    pub async fn new(window: Window) -> Self {
         let size = window.inner_size();
 
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
@@ -105,7 +104,7 @@ impl State {
             multiview: None,
         });
 
-        let buffer_size = num_vertices * std::mem::size_of::<Vertex>() as u32;
+        let buffer_size = 3 * crate::boid::MAX_BOIDS * std::mem::size_of::<Vertex>() as u32;
         let vertex_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Vertex Buffer"),
             size: buffer_size as u64,
@@ -120,7 +119,6 @@ impl State {
             surface_config,
             render_pipeline,
             vertex_buffer,
-            num_vertices,
             window,
         }
     }
@@ -138,7 +136,7 @@ impl State {
         self.surface.configure(&self.device, &self.surface_config);
     }
 
-    pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
+    pub fn render(&mut self, num_boids: u32) -> Result<(), wgpu::SurfaceError> {
         let output = self.surface.get_current_texture()?;
         let view = output
             .texture
@@ -172,7 +170,7 @@ impl State {
 
             render_pass.set_pipeline(&self.render_pipeline);
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-            render_pass.draw(0..self.num_vertices, 0..1);
+            render_pass.draw(0..3 * num_boids, 0..1);
         }
         self.queue.submit(std::iter::once(encoder.finish()));
         output.present();

@@ -1,3 +1,4 @@
+use std::cmp::min;
 use std::f32::consts::PI;
 use std::iter::repeat_with;
 
@@ -6,6 +7,9 @@ use rand::Rng;
 
 use crate::vector::Vector;
 use crate::vertex::Vertex;
+
+pub const MAX_BOIDS: u32 = 150;
+const BOID_DENSITY: f64 = 0.00015;
 
 const RADIUS: f32 = 80.0;
 const SEPARATION_FACTOR: f32 = 30.0;
@@ -115,7 +119,7 @@ const MIN_START_VELOCITY: f32 = 1.0;
 const MAX_START_VELOCITY: f32 = 2.0;
 
 impl Flock {
-    pub fn new(n: usize, width: u64, height: u64) -> Self {
+    pub fn new(width: u64, height: u64) -> Self {
         let mut rng = rand::thread_rng();
         Flock {
             boids: repeat_with(|| {
@@ -129,27 +133,27 @@ impl Flock {
                     velocity: mag * Vector::from_angle(theta),
                 }
             })
-            .take(n)
+            .take(MAX_BOIDS as usize)
             .collect(),
-            scratch: vec![Boid::zero(); n],
-            vertices: vec![Vertex::zeroed(); 3 * n],
+            scratch: vec![Boid::zero(); MAX_BOIDS as usize],
+            vertices: vec![Vertex::zeroed(); 3 * MAX_BOIDS as usize],
         }
     }
 
-    pub fn step(&mut self, width: u64, height: u64) {
-        log::warn!("{:?}", self.boids);
-
-        for i in 0..self.boids.len() {
-            let (lhs, rest) = self.boids.split_at(i);
+    pub fn step(&mut self, width: u64, height: u64) -> u32 {
+        let num_boids = boid_count(width, height);
+        for i in 0..num_boids as usize {
+            let (lhs, rest) = self.boids[..num_boids as usize].split_at(i);
             let (cur, rhs) = rest.split_first().unwrap();
             self.scratch[i] = cur.step(lhs, rhs, width as f32, height as f32);
         }
         std::mem::swap(&mut self.boids, &mut self.scratch);
-        self.update_vertices(width, height);
+        self.update_vertices(width, height, num_boids);
+        num_boids
     }
 
-    fn update_vertices(&mut self, width: u64, height: u64) {
-        for (i, boid) in self.boids.iter().enumerate() {
+    fn update_vertices(&mut self, width: u64, height: u64, num_boids: u32) {
+        for (i, boid) in self.boids.iter().take(num_boids as usize).enumerate() {
             let heading = boid.velocity.normalize();
             let orthogonal = heading.orthogonal();
 
@@ -163,7 +167,13 @@ impl Flock {
         }
     }
 
-    pub fn vertices(&self) -> &[Vertex] {
-        &self.vertices
+    pub fn vertices(&self, num_boids: u32) -> &[Vertex] {
+        &self.vertices[..3 * num_boids as usize]
     }
+}
+
+fn boid_count(width: u64, height: u64) -> u32 {
+    let area = width * height;
+    let count = BOID_DENSITY * area as f64;
+    min(MAX_BOIDS, count as u32)
 }
