@@ -9,7 +9,7 @@ use crate::vector::Vector;
 use crate::vertex::Vertex;
 
 pub const MAX_BOIDS: u32 = 150;
-const BOID_DENSITY: f64 = 0.00015;
+const BOID_DENSITY: f64 = 0.00011;
 
 const RADIUS: f32 = 80.0;
 const SEPARATION_FACTOR: f32 = 30.0;
